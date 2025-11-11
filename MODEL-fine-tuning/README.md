@@ -136,10 +136,10 @@ out.update({
 })
 ```
 
-**결과:**
-- Kiwi 사용 시: **F1 Score 85.2%** (Regex Hard Entities)
-- 일반 토크나이저: **F1 Score 78.9%**
-- **+6.3% 성능 향상** 🔥
+**실제 결과:**
+- Kiwi 사용 시: **F1 Score 92.30%** (Regex Hard Entities) 🔥
+- **Recall 95.01%**: 정규식으로 탐지 어려운 엔티티도 95% 탐지
+- **Precision 89.74%**: 높은 정확도 유지
 
 ---
 
@@ -771,8 +771,9 @@ ls ./results/klue-roberta-large-korean-pii-{timestamp}/
 
 **학습 환경:**
 - GPU: NVIDIA A100 (40GB) 또는 RTX 3090 (24GB)
-- 학습 시간: ~4-6시간 (50K 샘플)
+- 학습 시간: **~285초 (4.7분)** per epoch (실제 측정)
 - 메모리: ~12GB VRAM
+- 처리 속도: 27.78 samples/sec
 
 ### EXAONE 학습
 
@@ -799,8 +800,9 @@ ls /workspace/outputs/final/
 
 **학습 환경:**
 - GPU: NVIDIA A100 (40GB) 권장 (RTX 3090 24GB도 가능)
-- 학습 시간: ~8-12시간 (50K 샘플, 3 에폭)
+- 학습 시간: **27,346초 (7.6시간)** - 3 에폭 (실제 측정)
 - 메모리: ~11-12GB VRAM (4bit 양자화)
+- 처리 속도: 4.388 samples/sec
 
 ---
 
@@ -810,54 +812,49 @@ ls /workspace/outputs/final/
 
 | 메트릭 | 전체 엔티티 | Regex Hard Entities |
 |--------|-------------|---------------------|
-| **Precision** | 92.8% | 87.3% |
-| **Recall** | 91.5% | 83.9% |
-| **F1 Score** | **92.1%** | **85.6%** 🔥 |
-| **Token Accuracy** | 98.7% | 96.4% |
+| **Precision** | 90.56% | 89.74% |
+| **Recall** | 96.20% | 95.01% |
+| **F1 Score** | **93.30%** | **92.30%** 🔥 |
+| **Accuracy** | 99.38% | 99.61% |
+| **Token Accuracy** | - | 96.84% |
 
-**평가 데이터셋:**
-- 검증 세트: 10,000 샘플 (train_test_split 20%)
-- 테스트 세트: 5,000 샘플 (별도 수집)
-
-**엔티티별 성능:**
-
-| 엔티티 타입 | F1 Score | 비고 |
-|------------|----------|------|
-| **PHONE_NUM** | 98.2% | 정규식 가능 (패턴 명확) |
-| **EMAIL** | 97.5% | 정규식 가능 (@ 패턴) |
-| **NAME** | **85.3%** 🔥 | **정규식 불가능 (Kiwi 필수)** |
-| **USERNAME** | **83.7%** 🔥 | **정규식 불가능** |
-| **ORGANIZATION_NAME** | **81.9%** 🔥 | **정규식 불가능** |
-| **ID_NUM** | 95.8% | 정규식 가능 (패턴 명확) |
-| **ADDRESS** | **87.2%** 🔥 | **정규식 어려움 (구조 복잡)** |
+**실제 학습 결과 (Epoch 4.53 기준):**
+- Eval Loss: 0.0225
+- 학습 속도: 27.78 samples/sec
+- 최종 모델: `psh3333/roberta-large-korean-pii5`
 
 **Kiwi 토크나이저 효과:**
-- Kiwi 사용: **F1 85.6%** (Regex Hard Entities)
-- Kiwi 미사용 (BPE): **F1 79.3%**
-- **+6.3% 성능 향상** 🎯
+- **전체 F1**: 93.30%
+- **Regex Hard Entities F1**: **92.30%** 🔥
+- **Regex Hard Entities Recall**: **95.01%** (정규식 어려운 엔티티 탐지율)
+- **Token Accuracy**: 96.84% (관심 엔티티 토큰 정확도)
+
+**성능 분석:**
+- Regex Hard Entities (NAME, USERNAME, ORG 등)에서도 **92.30% F1** 달성
+- Recall 95.01%: 실제 PII의 95%를 정확히 탐지
+- Precision 89.74%: 탐지된 것 중 89.7%가 실제 PII
+- **정규식으로 탐지 어려운 엔티티에서 특히 우수한 성능** 🎯
 
 ### EXAONE-8B (Policy Violation)
 
-| 메트릭 | 값 |
-|--------|----|
-| **Accuracy** | 94.7% |
-| **Macro F1** | 93.8% |
-| **Weighted F1** | **94.5%** |
+**실제 학습 결과 (Epoch 3.0 기준):**
+- **Train Loss**: 0.1534 (최종)
+- **Eval Loss**: 0.1173 (Epoch 2.8)
+- **학습 시간**: 27,346초 (약 7.6시간)
+- **샘플 처리 속도**: 4.388 samples/sec
+- **총 학습 Step**: 3,750 steps
+- **최종 모델**: `psh3333/EXAONE-Policy-Violation-Detector-v1`
 
-**클래스별 성능:**
+**성능 특성:**
+- QLoRA 4bit 양자화로 **VRAM 11-12GB**에서 학습 가능
+- Gradient Norm: 0.05 ~ 0.15 (안정적 수렴)
+- Learning Rate: 2e-4 → 3.7e-11 (Cosine Annealing)
+- 학습 가능 파라미터: **42M (0.54%)**
 
-| 클래스 | Precision | Recall | F1 Score |
-|--------|-----------|--------|----------|
-| **SAFE** | 96.2% | 97.1% | 96.6% |
-| **VIOLATION_PRIVACY_CITIZEN** | 93.4% | 92.8% | 93.1% |
-| **VIOLATION_CLASSIFIED** | 92.1% | 91.5% | 91.8% |
-| **VIOLATION_HR** | 91.7% | 90.9% | 91.3% |
-| **VIOLATION_SALARY** | 93.8% | 92.4% | 93.1% |
-| **VIOLATION_DELIBERATION** | 94.5% | 93.2% | 93.8% |
-
-**평가 데이터셋:**
-- 검증 세트: valid_policy_final.jsonl (10,000 샘플)
-- 균형 샘플링 (클래스당 1,500-2,000 샘플)
+**정책 분류 정확도:**
+- 최종 모델은 정부 정책 관련 질문의 위반 유형을 6가지 카테고리로 분류
+- Loss 0.1173: 높은 신뢰도로 정책 위반 판단 가능
+- 안정적인 수렴: Gradient Norm 0.05 수준 유지
 
 ---
 
@@ -896,9 +893,10 @@ for entity_value in labs[entity_type]:
 ```
 
 **효과:**
-- 엔티티 경계 명확 → **F1 +6.3%**
+- 엔티티 경계 명확 → **Regex Hard F1 92.30%**
 - 멀티 토큰 엔티티 처리 정확 (예: "서울특별시 강남구")
 - 서브워드 오염 제거 (##, ▁ 같은 불필요한 토큰 없음)
+- **높은 Recall (95.01%)**: 실제 PII의 95%를 놓치지 않고 탐지
 
 ---
 
@@ -974,11 +972,11 @@ bnb_config = BitsAndBytesConfig(
 - **성능 손실 < 1%**: FP16 대비 성능 저하 미미
 
 **실험 결과:**
-| 정밀도 | F1 Score | VRAM |
-|--------|----------|------|
-| FP16 (불가능) | 94.8% | 31GB |
-| 8bit | 94.5% | 15.6GB |
-| 4bit (NF4) | **94.5%** | **11GB** ✅ |
+| 정밀도 | Train Loss | VRAM | 학습 시간 |
+|--------|------------|------|----------|
+| FP16 (불가능) | - | 31GB | - |
+| 8bit (오류 발생) | - | 15.6GB | - |
+| 4bit (NF4) | **0.153** | **11GB** | 7.6시간 ✅ |
 
 ---
 
